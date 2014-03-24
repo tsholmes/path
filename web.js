@@ -23,8 +23,14 @@ app.post('/api/put', function(req,res) {
   var type = req.body.type;
   var id = req.body.id;
   var data = req.body.data;
-  storage.appendDataset(type,id,data,function(alldata){
-    res.send(alldata);
+  var success = storage.putDataset(type,id,data);
+  res.send({success:success});
+});
+
+app.post('/api/get', function(req,res) {
+  var type = req.body.type;
+  storage.getDatasets(type,function(data){
+    res.send({data:data});
   });
 });
 

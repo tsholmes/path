@@ -28,17 +28,25 @@ var ajax = {
   }
 };
 
-function PathAPI(type) {
-  this.type = type;
-}
-PathAPI.prototype.register = function() {
-  var t = this;
-  ajax.post("/api/register", {type:this.type}, function(data){
-    t.id = data.id;
-  });
-}
-PathAPI.prototype.put = function(data) {
-  ajax.post("/api/put", {type:this.type,id:this.id,data:data}, function(allData){
-    console.log(allData);
-  });
+PathAPI = {
+  putData: function(type,data,callback) {
+    ajax.post("/api/register", {type:type}, function(idRes) {
+      if (!("id" in idRes)) {
+        callback("Failed to register id");
+        return;
+      }
+      ajax.post("/api/put", {type:type,id:idRes.id,data:data}, function(putRes){
+        if (!putRes.success) {
+          callback("Failed to put data");
+          return;
+        }
+        callback();
+      });
+    });
+  },
+  getData: function(type,callback) {
+    ajax.post("/api/get", {type:type}, function(data){
+      callback(data);
+    });
+  }
 }

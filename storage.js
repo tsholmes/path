@@ -3,6 +3,7 @@
 var adapter = require("./fsstorage.js");
 
 var datasets = { };
+var pending = { };
 var modcount = { };
 var saving = { };
 var nextId = -1;
@@ -24,19 +25,31 @@ function getDataset(type,id,callback) {
   }
 }
 
-function appendDataset(type,id,value,callback) {
-  getDataset(type,id,function(data){
-    data.push(value);
-    modcount[type]++;
-    saveDatasets(type);
-    callback(data);
-  });
+function getDatasets(type,callback) {
+  if (type in datasets) {
+    callback(datasets[type]);
+  } else {
+    loadDatasets(type, function(){
+      getDatasets(type,callback);
+    });
+  }
+}
+
+function putDataset(type,id,data,callback) {
+  if (!pending[type] || !pending[type][id]) {
+    return false;
+  }
+  delete pending[type][id];
+  datasets[type][id] = data;
+  saveDatasets(type);
+  return true;
 }
 
 function loadDatasets(type,callback) {
   adapter.loadDatasets(type,function(data){
     datasets[type] = data;
     modcount[type] = 0;
+    pending[type] = {};
     callback();
   });
 }
@@ -65,7 +78,7 @@ function newId(type, callback) {
     });
   } else {
     var id = nextId++;
-    datasets[type][id] = [];
+    pending[type][id] = true;
     adapter.saveId(nextId, function(){});
     callback(id);
   }
@@ -73,6 +86,7 @@ function newId(type, callback) {
 
 module.exports = {
   getDataset: getDataset,
-  appendDataset: appendDataset,
-  newId: newId
+  putDataset: putDataset,
+  newId: newId,
+  getDatasets: getDatasets
 };
